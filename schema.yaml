@@ -1,0 +1,386 @@
+## Copyright © 2020, Oracle and/or its affiliates. 
+## All rights reserved. The Universal Permissive License (UPL), Version 1.0 as shown at http://oss.oracle.com/licenses/upl
+
+title: "Create deployment of Apache Spark cluster in manager/worker mode on Oracle Cloud Infrastructure Compute instances"
+stackDescription: "Deploy an Apache Spark cluster in manager/worker mode in Oracle Cloud Infrastructure."
+schemaVersion: 1.1.0
+version: "20190404"
+locale: "en"
+
+variableGroups:
+- title: General Configuration
+  visible: false
+  variables:
+  - tenancy_ocid
+  - region
+  - release
+  - privateSubnet
+  - publicSubnet
+  - useExistingVcn
+  - hide_public_subnet
+  - hide_private_subnet
+  - vcn_dns_label
+  - myVcn
+  - oci_service_gateway
+  - InstanceImageOCID
+
+- title: Required Configuration
+  visible: true  
+  variables:
+  - compartment_ocid
+  - availability_domain_name
+  - master_instance_shape
+  - master_flex_shape_ocpus
+  - master_flex_shape_memory
+  - worker_instance_shape
+  - worker_flex_shape_ocpus
+  - worker_flex_shape_memory
+  - worker_node_count
+  - show_advanced
+
+- title: Networking Optional Configuration
+  visible: 
+      and:
+        - show_advanced
+  variables:  
+  - VCN_CIDR
+
+- title: Compute Optional Configuration
+  visible: 
+      and:
+        - show_advanced
+  variables:  
+  - instance_os
+  - linux_os_version 
+  - data_blocksize_in_gbs  
+  - block_volumes_per_worker
+  - enable_block_volumes
+
+- title: Spark Optional Configuration
+  visible: 
+      and:
+        - show_advanced
+  variables: 
+  - spark_version
+  - build_mode
+  - use_hive
+  - hadoop_version
+
+variables:
+
+  show_advanced:
+    type: boolean
+    title: "Show advanced options?"
+    description: "Shows advanced options."
+    visible: true
+    default: false
+
+  availability_domain_name:
+    type: oci:identity:availabilitydomain:name 
+    title: "Availability Domain"
+    description: "Select Availability Domain for your Apache Spark deployment"
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+    required: true
+
+  compartment_ocid:
+    type: oci:identity:compartment:id
+    required: true
+    visibile: true
+    title: "Compartment"
+    description: "Compartment where your Apache Spark will be deployed."
+
+  region:
+    type: oci:identity:region:name
+    required: true
+    visibile: false
+    title: "Region"
+    description: "Choose Region where your Apache Spark will be deployed."
+
+  instance_os:
+    type: enum
+    required: false
+    title: "Instance OS"
+    description: "An Operating System that determines the operating system for the instance."
+    default: "Oracle Linux"
+    enum:
+      - "Oracle Linux"
+      
+  linux_os_version:
+    type: enum
+    required: false
+    title: "Instance OS version"
+    description: "An Operating System version that determines the operating system version for the instance."
+    default: "7.9"
+    enum:
+      - "7.9"
+      - "8"
+
+  master_instance_shape:
+    type: oci:core:instanceshape:name
+    default: "VM.Standard.E3.Flex"
+    title: "Master Node Shape"
+    description: "Choose shape for Master Node"
+    required: true
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+
+  master_flex_shape_ocpus:
+    type: number
+    required: false
+    minimum: 1
+    maximum: 128
+    multipleOf: 1
+    default: 1
+    title: "Flex Shape OCPUs"
+    description: "Choose number of OCPUs for Flex Shape."
+    visible:
+      and:
+        - or:
+          - eq:
+            - master_instance_shape
+            - "VM.Standard.E3.Flex"
+          - eq:
+            - master_instance_shape
+            - "VM.Standard.E4.Flex"
+          - eq:
+            - master_instance_shape
+            - "VM.Optimized3.Flex"
+          - eq:
+            - master_instance_shape
+            - "VM.Standard.A1.Flex"
+
+  master_flex_shape_memory:
+    type: number
+    required: false
+    minimum: 1
+    maximum: 128
+    multipleOf: 1
+    default: 10
+    title: "Flex Shape Memory (GB)"
+    description: "Choose number GB for Flex Shape Memory."
+    visible:
+      and:
+        - or:
+          - eq:
+            - master_instance_shape
+            - "VM.Standard.E3.Flex"
+          - eq:
+            - master_instance_shape
+            - "VM.Standard.E4.Flex"
+          - eq:
+            - master_instance_shape
+            - "VM.Optimized3.Flex"
+          - eq:
+            - master_instance_shape
+            - "VM.Standard.A1.Flex"
+
+  worker_instance_shape:
+    type: oci:core:instanceshape:name
+    default: "VM.Standard.E3.Flex"
+    title: "Spark Worker Nodes Shape"
+    description: "Choose shape for Spark Worker Nodes."
+    required: true
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+
+  worker_flex_shape_ocpus:
+    type: number
+    required: false
+    minimum: 1
+    maximum: 128
+    multipleOf: 1
+    default: 1
+    title: "Flex Shape OCPUs"
+    description: "Choose number of OCPUs for Flex Shape."
+    visible:
+      and:
+        - or:
+          - eq:
+            - worker_instance_shape
+            - "VM.Standard.E3.Flex"
+          - eq:
+            - worker_instance_shape
+            - "VM.Standard.E4.Flex"
+          - eq:
+            - worker_instance_shape
+            - "VM.Optimized3.Flex"
+          - eq:
+            - worker_instance_shape
+            - "VM.Standard.A1.Flex"
+
+  worker_flex_shape_memory:
+    type: number
+    required: false
+    minimum: 1
+    maximum: 128
+    multipleOf: 1
+    default: 10
+    title: "Flex Shape Memory (GB)"
+    description: "Choose number GB for Flex Shape Memory."
+    visible:
+      and:
+        - or:
+          - eq:
+            - worker_instance_shape
+            - "VM.Standard.E3.Flex"
+          - eq:
+            - worker_instance_shape
+            - "VM.Standard.E4.Flex"
+          - eq:
+            - worker_instance_shape
+            - "VM.Optimized3.Flex"
+          - eq:
+            - worker_instance_shape
+            - "VM.Standard.A1.Flex"
+
+  worker_node_count:
+    type: integer
+    minimum: 1 
+    title: "Number of Worker Nodes"
+    description: "1 is the minimum requirement"
+    required: true
+
+  data_blocksize_in_gbs:
+    type: integer
+    title: "Worker Block Volume Size (GB)"
+    description: "Choose Worker Block Volume Size (1 to 32,768GB)"
+    minimum: 1
+    maximum: 32768
+    required: true
+
+  block_volumes_per_worker:
+    type: integer
+    title: "Number of Block Volumes per Worker"
+    description: "Choose Number of Block Volumes per Worker (0 to 32)"
+    default: 1
+    minimum: 0
+    maximum: 32
+    required: true
+
+  enable_block_volumes:
+    type: boolean
+    title: "Enable Block Volumes"
+    default: false
+    description: "Enable additonal Block Volume capacity on Spark Workers"
+
+  VCN_CIDR:
+    type: string
+    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
+    title: "VCN CIDR"
+    description: "Choose VCN's CIDR block where Redis compute instances will be deployed."
+
+  vcn_dns_label:
+    type: string
+    title: "VCN DNS Label"
+    description: "Set the VCN DNS label to be used when creating VCN."
+
+  build_mode:
+    type: enum
+    title: "Spark Build Mode Options"
+    enum:
+      - "Stand Alone"
+      - "Hadoop"
+      - "Mesos"
+      - "Kubernetes"
+    default: "Stand Alone"
+    description: "Pick which build integration option you want." 
+
+  use_hive:
+    type: boolean
+    title: "Hive/JCBC Integration"
+    default: false
+    description: "Check to enable Hive/JDBC integration"
+
+  spark_version:
+    type: enum
+    title: "Spark Version"
+    enum:
+      - "3.1.2"
+      - "3.1.1"
+      - "3.0.2"
+      - "3.0.1"
+      - "3.0.0"
+      - "2.4.8"
+      - "2.4.7"
+      - "2.4.6"
+    default: "3.1.2"
+    description: "Pick which Spark version from GitHub repository"
+
+  hadoop_version:
+    type: enum
+    title: "Hadoop Version"
+    enum:
+      - "2.6.x"
+      - "2.7.x"
+    default: "2.7.x"
+    description: "Pick which Hadoop version to support"
+
+  useExistingVcn:
+    type: boolean
+    title: "Already existing VCN"
+    visible: false
+    required: false
+
+  hide_public_subnet:
+    type: boolean
+    title: "Hide Public subnet"
+    visible: false
+    required: false
+
+  hide_private_subnet:
+    type: boolean
+    title: "Hide Private subnet"
+    visible: false
+    required: false
+
+  myVcn:
+    type: string
+    title: "My Already existing VCN"
+    visible: false
+    required: false
+
+  privateSubnet:
+    type: string
+    title: "Private Subnet"
+    visible: false
+    required: false
+
+  publicSubnet:
+    type: string
+    title: "Public Subnet"
+    visible: false
+    required: false
+
+  InstanceImageOCID:
+    type: string
+    title: "InstanceImageOCID"
+    visible: false
+    required: false
+
+  oci_service_gateway:
+    type: string
+    title: "oci_service_gateway"
+    visible: false
+    required: false
+    
+  release:
+    type: string
+    required: false
+    visible: false
+    title: "Reference Architecture Release (OCI Architecture Center)"
+
+outputs:
+
+  spark_manager_url:
+    title: "Spark Manager URL"
+    displayText: "Spark Manager URL"
+    type: copyableString
+    visible: true
+
+  generated_ssh_private_key:
+    title: "Generated SSH Private Key"
+    displayText: "Generated SSH Private Key"
+    type: copyableString
+    visible: true
+
