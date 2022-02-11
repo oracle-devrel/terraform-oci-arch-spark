@@ -1,3 +1,6 @@
+## Copyright (c) 2022, Oracle and/or its affiliates. 
+## All rights reserved. The Universal Permissive License (UPL), Version 1.0 as shown at http://oss.oracle.com/licenses/upl
+
 resource "oci_core_vcn" "spark_vcn" {
   count = var.useExistingVcn ? 0 : 1
   cidr_block     = var.VCN_CIDR

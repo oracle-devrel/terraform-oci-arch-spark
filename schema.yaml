@@ -1,4 +1,4 @@
-## Copyright © 2020, Oracle and/or its affiliates. 
+## Copyright (c) 2022, Oracle and/or its affiliates. 
 ## All rights reserved. The Universal Permissive License (UPL), Version 1.0 as shown at http://oss.oracle.com/licenses/upl
 
 title: "Create deployment of Apache Spark cluster in manager/worker mode on Oracle Cloud Infrastructure Compute instances"
@@ -111,7 +111,7 @@ variables:
     required: false
     title: "Instance OS version"
     description: "An Operating System version that determines the operating system version for the instance."
-    default: "7.9"
+    default: "8"
     enum:
       - "7.9"
       - "8"
